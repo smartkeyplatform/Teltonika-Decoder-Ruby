@@ -78,7 +78,6 @@ module FMB920
       EventMachine::run {
         @server = EventMachine::start_server "localhost", 5555, Server
         EventMachine.add_timer 5, proc { puts "Executing timer event: #{@server.inspect}" }
-        EventMachine.
         puts 'running server on 5555'
       }
     end

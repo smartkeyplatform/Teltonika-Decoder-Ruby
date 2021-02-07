@@ -2,8 +2,6 @@ module FMB920
   class Codec12 < Codec
     attr_reader :encoded_packet
 
-    PACKET_TYPES = ["command", "response"]
-
     FB_CMD_RSP_QUANTITY_1 = 0
     FB_TYPE = 1
     FB_CONTENT_LENGTH = 2

@@ -39,7 +39,7 @@ module FMB920
         when CODEC_12
           @actual_packet = Codec12.new('response',size)
         else
-          raise("Codec #{codec} not implemented, malformed packet?")
+          raise("Codec #{codec} not implemented, malformed packet?") # break connection
         end
       end
       data = @actual_packet.apply_data(data) if @actual_packet

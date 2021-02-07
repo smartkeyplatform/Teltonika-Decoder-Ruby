@@ -18,6 +18,7 @@ module FMB920
     # packet status? [pending,ok,fail]
 
     def initialize(length)
+      @codec_id=CODEC_ID
       @data_length = length - 1 - SIZE_NUMBER_OF_DATA * 2  # codec id not included here - skip 1 byte
       @data_to_read = length - 1 + SIZE_CRC  # size from "number of data 1" to crc (without codec id - skip 1 byte)
       @data = []                               # binary data
@@ -25,22 +26,26 @@ module FMB920
       @status = 'pending'                      # status of packet
     end
 
-    # parses records if crc is ok
-    def parse_data
-      # if crc is wrong treat packet as wrong, device will attempt to retransmit it
-      crc_offset = @data.length - FE_CRC - SIZE_CRC
-      return @status = 'fail' unless check_crc(crc_offset, SIZE_CRC, CRC_CALC_BEGIN_OFFSET, CRC_CALC_END_OFFSET, CODEC_ID)
+    private
+      # parses records if crc is ok
+      def parse_data
+        # if crc is wrong treat packet as wrong, device will attempt to retransmit it
+        crc_offset = @data.length - FE_CRC - SIZE_CRC
+        return @status = 'fail' unless check_crc(crc_offset, SIZE_CRC, CRC_CALC_BEGIN_OFFSET, CRC_CALC_END_OFFSET, CODEC_ID)
 
-      records_count = @data[FB_NUMBER_OF_DATA_1]  # get number of records
-      record_size = @data_length / records_count  # calculate record size (should be same)
-      record_offset = FB_FIRST_RECORD_OFFSET      # set offset to start processing records
-      while record_offset < @data_length + FB_FIRST_RECORD_OFFSET                         # while there is enough data
-        r = Codec8Data.new(record_size, @data.slice(record_offset, record_size)) # create new record
-        @records.push(r)                # add to records list 
-        record_offset += record_size    # change offset to next record
+        records_count = @data[FB_NUMBER_OF_DATA_1]  # get number of records
+        record_size = @data_length / records_count  # calculate record size
+        record_offset = FB_FIRST_RECORD_OFFSET      # set offset to start processing records
+        while record_offset < @data_length + FB_FIRST_RECORD_OFFSET                # while there is enough data
+          r = Codec8Data.new(record_size, @data.slice(record_offset, record_size)) # create new record
+          @records.push(r)                # add to records list 
+          record_offset += record_size    # change offset to next record
+        end
+        create_ack(records_count) # creates acknowledgement for packet
+        @status = 'ok' # all done, set status to ok
       end
-      @status = 'ok' # all done, set status to ok
-    end
+
+      
   end
 
   # codec 8 can have multiple data records in it

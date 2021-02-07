@@ -1,7 +1,9 @@
 module FMB920
   class Codec
-    attr_reader :status
-    attr_reader :records
+    attr_reader :codec_id # id of codec 8/12/255(ping)
+    attr_reader :status   # ok - received correctly / fail - crc error / pending - packet receiving is in progress
+    attr_reader :records  # data in packets
+    attr_reader :response # response to device (ack)
 
     def self.calculate_crc(data)
       crc = 0
@@ -47,7 +49,7 @@ module FMB920
     # applies data to bytes array
     def apply_data(bytes)
       bytes_to_append = [@data_to_read, bytes.length].min # calculate amount of bytes to be appended to data array
-      @data += bytes[0..bytes_to_append]                  # add slice of data
+      @data += bytes.slice(0,bytes_to_append)                  # add slice of data
       @data_to_read -= bytes_to_append                    # calculate remaining data to be read
       parse_data if @data_to_read.zero?                   # parse data to packets when all read
       bytes.slice(bytes_to_append, bytes.length)          # return array with unused bytes
@@ -57,7 +59,13 @@ module FMB920
       expected_crc = Codec.val_from_bytes(@data.slice(crc_offset, crc_size)) # crc value from packet
       data_for_crc = @data[crc_start..(@data.length - 1 - crc_end)]          # data used to calculate new crc
       calculated_crc = Codec.calculate_crc([codec].concat(data_for_crc))     # first byte is codec id, then data array without last 4 bytes (expected crc)
-      expected_crc == calculated_crc                                         # are all bytes same?
+      result = expected_crc == calculated_crc                                         # are all bytes same?
+      puts "CRC FAIL!"if !result
+      result
+    end
+
+    def create_ack(count)
+      @response = Codec.val_to_4_bytes(count)
     end
   end
 end

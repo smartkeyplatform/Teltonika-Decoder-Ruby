@@ -33,6 +33,7 @@ module FMB920
     PACKET_CRC_STOP_OFFS = 4
 
     def initialize(packet_type, length=0, payload="") # size 0 for command as it will be calculated
+      @codec_id=CODEC_ID
       @packet_type = packet_type
       @length = length
 
@@ -57,6 +58,7 @@ module FMB920
       record_size = Codec.val_from_bytes(@data.slice(FB_CONTENT_LENGTH, SIZE_CONTENT_LENGTH))  # calculate record size (should be same)
       record_string = @data.slice(FB_CONTENT, record_size).pack('c*') # record data parsed as string
       @records.push(record_string)                                      # add to record list 
+      create_ack(1) # record count always 1
       @status = 'ok' # all done, set status to ok
     end
 

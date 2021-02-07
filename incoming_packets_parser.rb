@@ -14,7 +14,6 @@ module FMB920
     SIZE_CODEC = 1
     SIZE_ZEROS = 4
     HEAD_LENGTH = SIZE_ZEROS + SIZE_CODEC + SIZE_LENGTH
-
   
     def initialize
       @buffer = []         # buffer for incoming data
@@ -23,10 +22,14 @@ module FMB920
 
     def parse_data(data)
       packets = []
-      data = reset_when_not_preamble(data) if @buffer.length < SIZE_ZEROS
-      data = append_initial_bytes(data) if @buffer.length < HEAD_LENGTH
+      
+      data, ping_packet = parse_ping(data) if @buffer.length == 0 # ping is one byte 0xFF
+      packets+=ping_packet
 
-      if @actual_packet.nil? && HEAD_LENGTH == @buffer.length
+      data = reset_when_not_preamble(data) if @buffer.length < SIZE_ZEROS # every packet (not including ping) starts with 4B zeros
+      data = append_initial_bytes(data) if @buffer.length < HEAD_LENGTH # bytes containing size and codec id
+
+      if @actual_packet.nil? && HEAD_LENGTH == @buffer.length # if can create new packet with buffered data (length+codec)
         codec = @buffer[FB_CODEC]                                          # get codec id
         size = Codec.val_from_bytes(@buffer.slice(FB_LENGTH, SIZE_LENGTH)) # get data length
         puts "detected codec: #{codec}, size: #{size}"
@@ -35,9 +38,8 @@ module FMB920
           @actual_packet = Codec8.new(size)
         when CODEC_12
           @actual_packet = Codec12.new('response',size)
-        #when PING #@TODO
         else
-          raise("Codec #{codec} not implemented")
+          raise("Codec #{codec} not implemented, malformed packet?")
         end
       end
       data = @actual_packet.apply_data(data) if @actual_packet
@@ -48,7 +50,8 @@ module FMB920
         @buffer = []                  # reset buffer, remaining data will be discarded until preamble
       end
       
-      return packets.push(parse_data(data)) if data.length.positive? # run parse on rest of data when any left 
+      
+      return packets+parse_data(data) if data.length.positive? # run parse on rest of data when any left 
 
       packets # or just return actual packets
     end
@@ -74,5 +77,10 @@ module FMB920
       data.slice(offset, data.size) # return remaining data
     end
     
+    def parse_ping(data)
+      return data,[] if data[0] != 0xFF # not a ping (0xff)
+      return data.slice(1,data.length), [CodecPing.new]
+    end
+
   end
 end

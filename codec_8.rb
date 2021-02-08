@@ -60,6 +60,25 @@ module FMB920
     SIZE_GPS = 15
     # SIZE_IO=?
 
+    GPS_LNG = 0
+    GPS_LNG_SIZE = 4
+    GPS_LAT = GPS_LNG_SIZE
+    GPS_LAT_SIZE = 4
+    GPS_ALT = GPS_LAT + GPS_LAT_SIZE
+    GPS_ALT_SIZE = 2
+    GPS_ANGLE = GPS_ALT + GPS_ALT_SIZE
+    GPS_ANGLE_SIZE = 2
+    GPS_SATELLITE = GPS_ANGLE + GPS_ANGLE_SIZE
+    GPS_SATELLITE_SIZE = 1
+    GPS_SPEED = GPS_SATELLITE + GPS_SATELLITE_SIZE
+    GPS_SPEED_SIZE = 2
+
+    EVENT_IO_ID = 0
+    EVENT_IO_ID_SIZE = 1
+    IO_NO = EVENT_IO_ID_SIZE
+    IO_NO_SIZE = 1
+
+
     def initialize(length, bytes)
       @packet_length = length
       apply_data(bytes)
@@ -67,10 +86,38 @@ module FMB920
 
     private
       def apply_data(bytes)
-        @timestamp = Codec.val_from_bytes(bytes.slice(FB_TIMESTAMP, SIZE_TIMESTAMP))
+        @timestamp = bytes.slice(FB_TIMESTAMP, SIZE_TIMESTAMP)
         @priority = bytes[FB_PRIORITY]
-        @gps = bytes.slice(FB_GPS, SIZE_GPS)
-        @io = bytes[FB_IO..bytes.length - 1]
+        @gps = parse_gps(bytes.slice(FB_GPS, SIZE_GPS))
+        @io = parse_io(bytes[FB_IO..bytes.length - 1])
       end
+
+      def parse_gps(data)
+        {
+          lng: Codec.val_from_bytes(data.slice(GPS_LNG, GPS_LNG_SIZE)),
+          lat: Codec.val_from_bytes(data.slice(GPS_LAT, GPS_LAT_SIZE)),
+          alt: Codec.val_from_bytes(data.slice(GPS_ALT, GPS_ALT_SIZE)),
+          angle: Codec.val_from_bytes(data.slice(GPS_ANGLE, GPS_ANGLE_SIZE)),
+          satellite: Codec.val_from_bytes(data.slice(GPS_SATELLITE, GPS_SATELLITE_SIZE)),
+          speed: Codec.val_from_bytes(data.slice(GPS_SPEED, GPS_SPEED_SIZE))
+        }
+      end
+
+      def parse_io(data)
+        io = {
+          event_io: Codec.val_from_bytes(data.slice(EVENT_IO_ID, EVENT_IO_ID_SIZE)),
+          total: Codec.val_from_bytes(data.slice(IO_NO, IO_NO_SIZE)),
+          raw: data
+        }
+
+        
+        # # io values
+        # offset = EVENT_IO_ID_SIZE + IO_NO_SIZE
+        # io.total.times do |v|
+
+        # end
+        
+      end
+
   end
 end

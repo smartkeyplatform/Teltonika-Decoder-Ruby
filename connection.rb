@@ -20,8 +20,8 @@ module FMB920
     end
 
     def receive_data data
-      puts data
-      puts data.length
+      # puts data
+      # puts data.length
       parse_incoming_data(data.unpack('C*'))
     end
 

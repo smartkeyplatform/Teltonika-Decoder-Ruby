@@ -1,6 +1,6 @@
 require 'awesome_print'
 require 'color'
-require 'byebug'
+# require 'byebug'
 require_relative 'incoming_packets_parser'
 require_relative 'codec.rb'
 require_relative 'codec_ping.rb'
@@ -49,5 +49,6 @@ puts 'generated data:'
 puts @packet.encoded_packet.inspect
 puts @packet.encoded_packet == str_to_hex(TEST_STR_12_CMD) ? "Command ok" : "Command is wrong"
 
+puts '#'*32
+
 @connection = FMB920::Machine.new
-byebug

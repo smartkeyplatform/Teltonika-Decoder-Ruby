@@ -26,18 +26,18 @@ module FMB920
       packets = []
 
       if @buffer.empty?
-        data, ping_packet = parse_ping(data)
-      end # ping is one byte 0xFF
+        data, ping_packet = parse_ping(data) # ping is one byte 0xFF
+      end
       packets += ping_packet
 
-      if @buffer.length < SIZE_ZEROS
-        data = reset_when_not_preamble(data)
-      end # every packet (not including ping) starts with 4B zeros
-      if @buffer.length < HEAD_LENGTH
-        data = append_initial_bytes(data)
-      end # bytes containing size and codec id
+      # every packet (without ping) starts with 4B zeros
+      data = reset_when_not_preamble(data) if @buffer.length < SIZE_ZEROS
 
-      if @actual_packet.nil? && HEAD_LENGTH == @buffer.length # if can create new packet with buffered data (length+codec)
+      # bytes containing size and codec id
+      data = append_initial_bytes(data) if @buffer.length < HEAD_LENGTH
+
+      # if can create new packet with buffered data (length+codec)
+      if @actual_packet.nil? && HEAD_LENGTH == @buffer.length
         codec = @buffer[FB_CODEC]                                          # get codec id
         size = Codec.val_from_bytes(@buffer.slice(FB_LENGTH, SIZE_LENGTH)) # get data length
         puts "detected codec: #{codec}, size: #{size}"
@@ -52,15 +52,15 @@ module FMB920
       end
       data = @actual_packet.apply_data(data) if @actual_packet
 
-      if @actual_packet && @actual_packet.status != 'pending' # if there is a packet with status 'ok' or 'fail'
+      # if there is a packet with status 'ok' or 'fail'
+      if @actual_packet && @actual_packet.status != 'pending'
         packets.push(@actual_packet)  # push actual packet
         @actual_packet = nil          # reset packet variable
         @buffer = []                  # reset buffer, remaining data will be discarded until preamble
       end
 
-      if data.length.positive?
-        return packets + parse_data(data)
-      end # run parse on rest of data when any left
+      # run parse on rest of data when any left
+      return packets + parse_data(data) if data.length.positive?
 
       packets # or just return actual packets
     end
@@ -75,8 +75,9 @@ module FMB920
     # eg in case last packet was malformed skip until preamble (4B of zeros)
     def reset_when_not_preamble(data)
       offset = 0
-      while @buffer.length < SIZE_ZEROS && offset < data.length # while buffer is not containing 4B zeros or offset is outside data range
-        if data[offset] == 0  # if it was zero
+      # while buffer is not containing 4B zeros or offset is outside data range
+      while @buffer.length < SIZE_ZEROS && offset < data.length
+        if data[offset].zero? # if it was zero
           @buffer.push(0)     # push zero to buffer
         else
           @buffer = [] # reset buffer

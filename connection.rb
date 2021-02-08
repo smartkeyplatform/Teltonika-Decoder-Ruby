@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'eventmachine'
 
 module FMB920
@@ -8,17 +10,16 @@ module FMB920
     HEADER_SIZE = 16
     IMEI_START = 2
     IMEI_END = 16
-    RESPONSE_OK = [1]
-    RESPONSE_ERR = [0]
-
+    RESPONSE_OK = [1].freeze
+    RESPONSE_ERR = [0].freeze
 
     def post_init
       @parser = IncomingPacketsParser.new
-      @status = "init"
+      @status = 'init'
       @initial_bytes = []
     end
 
-    def receive_data data
+    def receive_data(data)
       # puts data
       # puts data.length
       parse_incoming_data(data.unpack('C*'))
@@ -28,7 +29,10 @@ module FMB920
       case @status
       when 'init'
         data = initialize_connection(data)
-        parse_incoming_data(data) if data.length.positive?  # if not all packets consumed do recursive call to parse as packets
+        if data.length.positive?
+          # if not all packets consumed do recursive call to parse as packets
+          parse_incoming_data(data)
+        end
       when 'ready'
         packets = @parser.parse_data(data)
         consume_packets(packets)
@@ -37,25 +41,27 @@ module FMB920
 
     def initialize_connection(data)
       if @initial_bytes.length < HEADER_SIZE
-        bytes_to_append = [HEADER_SIZE - @initial_bytes.length, data.length].min # calculate amount of bytes to be appended to data array
-        @initial_bytes += data.slice(0,bytes_to_append)                          # add slice of data
-        data = data.slice(bytes_to_append, data.length)                         # return array with unused bytes
+        # calculate amount of bytes to be appended to data array
+        bytes_to_append = [HEADER_SIZE - @initial_bytes.length, data.length].min
+        @initial_bytes += data.slice(0, bytes_to_append) # add slice of data
+        data = data.slice(bytes_to_append, data.length) # return array with unused bytes
       end
 
       if @initial_bytes.length == HEADER_SIZE
         @imei = @initial_bytes[IMEI_START..IMEI_END].pack('C*')
         send_bytes RESPONSE_OK # ack imei accepted
-        @status = "ready"
+        @status = 'ready'
       end
       data
     end
 
-    def send_bytes(data) # wraps send_data to accept byte array
+    # wraps send_data to accept byte array
+    def send_bytes(data)
       send_data data.pack('C*')
     end
 
     def send_outcoming_command(command)
-      data = Codec12.new('command',0,command).encoded_packet
+      data = Codec12.new('command', 0, command).encoded_packet
       send_bytes(data)
     end
 
@@ -67,19 +73,17 @@ module FMB920
     end
 
     # connection closed
-    def unbind(reason="")
+    def unbind(reason = '')
       puts "connection to device #{@imei} closed #{reason}"
     end
   end
 
   class Machine
     def initialize
-      EventMachine::run {
-        @server = EventMachine::start_server "localhost", 5555, Server
-        EventMachine.add_timer 5, proc { puts "Executing timer event: #{@server.inspect}" }
+      EventMachine.run do
+        @server = EventMachine.start_server 'localhost', 5555, Server
         puts 'running server on 5555'
-      }
+      end
     end
   end
-
 end

@@ -15,7 +15,6 @@ module FMB920
     def post_init
       @parser = IncomingPacketsParser.new
       @status = "init"
-      @packets = []
       @initial_bytes = []
     end
 
@@ -56,7 +55,7 @@ module FMB920
     end
 
     def send_outcoming_command(command)
-      data = Codec12.new('command',0,command)
+      data = Codec12.new('command',0,command).encoded_packet
       send_bytes(data)
     end
 

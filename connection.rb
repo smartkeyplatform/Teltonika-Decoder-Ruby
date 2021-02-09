@@ -17,6 +17,12 @@ module FMB920
       @parser = IncomingPacketsParser.new
       @status = 'init'
       @initial_bytes = []
+
+      # send command
+      EM.add_timer(10) do
+        puts "sending Codec12 command 'getgps'"
+        send_outcoming_command('getgps')
+      end
     end
 
     def receive_data(data)

@@ -75,3 +75,28 @@ connection to device 12345678912345 closed
   - Private
     - parse_data - (for Codec8/Codec12) - called internally method which checks crc and parses bytes to records
     - create_ack - creates ack bytes from packets count
+
+# IncomingPacketsParser
+  Parser expects data in form of byte array. Can detect Codec8/12/Ping.
+
+  Methods:
+  - Public:
+    - parse_data(data) - parses incoming data, detects codec type (or ping), creates right codec instance and applies bytes to it. When any packet (or ping) is ready returns array containing it, otherwise empty array. Wrong codec id raises exception.
+  - Private:
+    - append_initial_bytes - sets initial bytes containing size and codec id
+    - reset_when_not_preamble - sets preamble (4B zero) resets buffer when preamble is wrong
+    - parse_ping - parses ping
+
+# Server
+  Handles connection with device, sets imei then uses parser to process incoming data.
+  Example command 'getgps' will be sent 10 seconds after connection
+
+  Methods:
+  - post_init - creates parser and initial_bytes array, sets timer to send test command (getgps)
+  - receive_data(data) - receives data from socket, converts it to bytes array and passes to parse_incoming_data
+  - parse_incoming_data(bytes) - depending on state sets imei of device or parses data to packets
+  - initialize_connection(bytes) - sets initial bytes containing imei, sets it, responds with 0x01 (keep connection) to device
+  - send_bytes(data) - converts bytes to format accepted by send_data
+  - send_outcoming_command(command) - encodes string command and sends it to device
+  - consume_packets(packets) - displays packets in console and sends acknowledgements
+  - unbind - called when device closes conenction

@@ -65,6 +65,8 @@ module FMB920
       packets # or just return actual packets
     end
 
+    private
+
     # appends initial bytes (after preamble) with data size and codec id
     def append_initial_bytes(data)
       bytes_to_append = [data.length, HEAD_LENGTH - @buffer.length].min

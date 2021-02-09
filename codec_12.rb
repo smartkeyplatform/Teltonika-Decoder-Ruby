@@ -2,7 +2,6 @@
 
 module FMB920
   class Codec12 < Codec
-    attr_reader :encoded_packet
 
     FB_CMD_RSP_QUANTITY_1 = 0
     FB_TYPE = 1

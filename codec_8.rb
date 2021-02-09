@@ -87,7 +87,7 @@ module FMB920
     private
 
     def apply_data(bytes)
-      @timestamp = bytes.slice(FB_TIMESTAMP, SIZE_TIMESTAMP)
+      @timestamp = Codec.val_from_bytes(bytes.slice(FB_TIMESTAMP, SIZE_TIMESTAMP))
       @priority = bytes[FB_PRIORITY]
       @gps = parse_gps(bytes.slice(FB_GPS, SIZE_GPS))
       @io = parse_io(bytes[FB_IO..bytes.length - 1])

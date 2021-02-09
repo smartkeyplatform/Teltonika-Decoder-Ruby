@@ -49,6 +49,7 @@ module FMB920
 
       if @initial_bytes.length == HEADER_SIZE
         @imei = @initial_bytes[IMEI_START..IMEI_END].pack('C*')
+        puts "Device connected #{imei}"
         send_bytes RESPONSE_OK # ack imei accepted
         @status = 'ready'
       end
